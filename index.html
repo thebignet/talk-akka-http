@@ -58,7 +58,7 @@
 
 				<section>
 					<h2>Projet en cours de maturation</h2>
-					<p>version <a href="http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0-M1/scala.html">2.0-M1</a> lors de cette présentation</p>
+					<p>version <a href="http://doc.akka.io/docs/akka-stream-and-http-experimental/2.0.1/scala/http/index.html">2.0.1</a> lors de cette présentation</p>
 					<p>mélange entre Spray et Akka</p>
 				</section>
 
@@ -66,9 +66,9 @@
 					<h2>Akka Streams</h2>
 					<p>Présenté au SLUG par <a href="https://twitter.com/fmasion">Frédéric Masion</a> en février 2015</p>
 					<p><pre><center><code class="scala" data-trim contenteditable>Source ~> Flow ~> Sink</code></center></pre></p>
-					<p><strong>Source</strong> décrit une source de données</p>
-					<p><strong>Flow</strong> représente une transformation de ces données</p>
-					<p><strong>Sink</strong> une opération terminale</p>
+					<p><span style="color: yellow">Source</span> décrit une source de données</p>
+					<p><span style="color: yellow">Flow</span> représente une transformation de ces données</p>
+					<p><span style="color: yellow">Sink</span> une opération terminale</p>
 				</section>
 
 				<section>
@@ -83,9 +83,148 @@
 				<section>
 					<h2>Akka Http</h2>
 					<p>Constuit sur Akka Streams</p>
-					<p>Le net est un tuyau</p>
-					<p>Mettre des acteurs sur HTTP</p>
+					<p><img src="img/cats-pipes.jpg" width="400px" style="border:none; box-shadow:none; background: none;"/></p>
+					<p>Internet est un tuyau</p>
+				</section>
+
+				<section>
+					<h2>Akka Http</h2>
+					<p>Flow[HttpRequest, HttpResponse]</p>
+				</section>
+
+				<section  data-background-color="#1a1018">
+					<h2>Akka Http</h2>
 					<p>Client et serveur</p>
+					<p>Mettre des acteurs sur HTTP</p>
+					<p><img src="img/nespresso.jpg" width="400px" style="border:none; box-shadow:none; background: none;"/></p>
+				</section>
+
+				<section>
+					<h2>Modules</h2>
+					<p><object type="image/svg+xml" data="img/modules.svg" width="253" height="273"></object></p>
+				</section>
+
+				<section>
+					<section class="has-light-background" data-background-color="#c1f0f5" data-transition="none">
+						<h2>Exemple simple</h2>
+						<p><small><pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+ 
+object Main extends App {
+  implicit val system = ActorSystem("my-system")
+  implicit val materializer = ActorMaterializer()
+  implicit val ec = system.dispatcher
+ 
+  val route =
+    path("hello") {
+      get {
+        complete {
+          &lt;h1&gt;Say hello to akka-http&lt;/h1&gt;
+        }
+      }
+    }
+ 
+  val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+ 
+  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  Console.readLine() // for the future transformations
+  bindingFuture
+    .flatMap(_.unbind()) // trigger unbinding from the port
+    .onComplete(_ ⇒ system.shutdown()) // and shutdown when done
+}</pre></small></p>
+					</section>
+					<section class="has-light-background" data-background-color="#c1f0f5" data-transition="none">
+						<h2>Exemple simple</h2>
+						<p><small><pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+ 
+object Main extends App {
+  implicit val system = ActorSystem("my-system")
+  implicit val materializer = ActorMaterializer()
+  implicit val ec = system.dispatcher
+ 
+  val route =
+    <strong>path("hello")</strong> {
+      get {
+        complete {
+          &lt;h1&gt;Say hello to akka-http&lt;/h1&gt;
+        }
+      }
+    }
+ 
+  val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+ 
+  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  Console.readLine() // for the future transformations
+  bindingFuture
+    .flatMap(_.unbind()) // trigger unbinding from the port
+    .onComplete(_ ⇒ system.shutdown()) // and shutdown when done
+}</pre></small></p>
+					</section>
+					<section class="has-light-background" data-background-color="#c1f0f5" data-transition="none">
+						<h2>Exemple simple</h2>
+						<p><small><pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+ 
+object Main extends App {
+  implicit val system = ActorSystem("my-system")
+  implicit val materializer = ActorMaterializer()
+  implicit val ec = system.dispatcher
+ 
+  val route =
+    path("hello") {
+      <strong>get</strong> {
+        complete {
+          &lt;h1&gt;Say hello to akka-http&lt;/h1&gt;
+        }
+      }
+    }
+ 
+  val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+ 
+  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  Console.readLine() // for the future transformations
+  bindingFuture
+    .flatMap(_.unbind()) // trigger unbinding from the port
+    .onComplete(_ ⇒ system.shutdown()) // and shutdown when done
+}</pre></small></p>
+					</section>
+					<section class="has-light-background" data-background-color="#c1f0f5" data-transition="none">
+						<h2>Exemple simple</h2>
+						<p><small><pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+ 
+object Main extends App {
+  implicit val system = ActorSystem("my-system")
+  implicit val materializer = ActorMaterializer()
+  implicit val ec = system.dispatcher
+ 
+  val route =
+    path("hello") {
+      get {
+        <strong>complete {
+          &lt;h1&gt;Say hello to akka-http&lt;/h1&gt;
+        }</strong>
+      }
+    }
+ 
+  val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+ 
+  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  Console.readLine() // for the future transformations
+  bindingFuture
+    .flatMap(_.unbind()) // trigger unbinding from the port
+    .onComplete(_ ⇒ system.shutdown()) // and shutdown when done
+}</pre></small></p>
+					</section>
 				</section>
 
 			</div>
