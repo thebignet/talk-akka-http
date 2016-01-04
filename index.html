@@ -104,6 +104,10 @@
 				</section>
 
 				<section>
+					<h2>C'est bon, montre-moi le code</h2>
+				</section>
+
+				<section>
 					<section class="has-light-background" data-background-color="#c1f0f5" data-transition="none">
 						<h2>Exemple simple</h2>
 						<p><small><pre>import akka.http.scaladsl.Http
@@ -228,6 +232,45 @@ object Main extends App {
 
 				<section>
 					<h2>Marshalling/Unmarshalling</h2>
+					<p>Comment passer du flux HTTP à Scala et inversement ?</p>
+				</section>
+
+				<section>
+					<h2>Marshalling</h2>
+					<p>Marshallers prédéfinis</p>
+					<p><pre>
+Array[Byte]
+ByteString
+Array[Char]
+String
+akka.http.scaladsl.model.FormData
+akka.http.scaladsl.model.MessageEntity
+T <: akka.http.scaladsl.model.Multipart
+T si ToEntityMarshaller[T] est présent</pre></p>
+				</section>
+
+				<section>
+					<h2>Marshalling</h2>
+					<p>Résolution implicite</p>
+					<p>Si le type ToEntityMarshaller[T] est défini, il est utilisé</p>
+				</section>
+
+				<section>
+					<h2>Unmarshalling</h2>
+					<p>Unmarshallers prédéfinis</p>
+					<p><pre>Byte
+Short
+Int
+Long
+Float
+Double
+Boolean
+Array[Byte]
+ByteString
+Array[Char]
+String
+akka.http.scaladsl.model.FormData
+</pre></p>
 				</section>
 
 				<section>
@@ -235,7 +278,127 @@ object Main extends App {
 				</section>
 
 				<section>
+					<h2>Low-level</h2>
+					<pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model._
+import akka.stream.ActorMaterializer
+ 
+implicit val system = ActorSystem()
+implicit val materializer = ActorMaterializer()
+ 
+val requestHandler: HttpRequest => HttpResponse = {
+  case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
+    HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
+      "<html><body>Hello world!</body></html>"))
+ 
+  case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
+    HttpResponse(entity = "PONG!")
+ 
+  case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
+    sys.error("BOOM!")
+ 
+  case _: HttpRequest =>
+    HttpResponse(404, entity = "Unknown resource!")
+}
+ 
+Http().bindAndHandleSync(requestHandler, "localhost", 8080)</pre>
+				</section>
+
+				<section>
+					<h2>High-level</h2>
+					<pre>import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.ActorMaterializer
+ 
+implicit val system = ActorSystem()
+implicit val materializer = ActorMaterializer()
+ 
+val route =
+  get {
+    pathSingleSlash {
+      complete {
+        &lt;html&gt;
+          &lt;body&gt;Hello world!&lt;/body&gt;
+        &lt;/html&gt;
+      }
+    } ~
+    path("ping") {
+      complete("PONG!")
+    } ~
+    path("crash") {
+      sys.error("BOOM!")
+    }
+  }
+ 
+// `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`
+Http().bindAndHandle(route, "localhost", 8080)</pre>
+				</section>
+
+				<section>
 					<h2>Directives</h2>
+				</section>
+
+				<section>
+					<h2>Directives</h2>
+					<p>Intercepte la requête</p>
+					<p>Filtrage de la requête</p>
+					<p>Transformation de la requête ou réponse</p>
+					<p>Extraire des informations</p>
+				</section>
+
+				<section>
+					<h2>Exemple</h2>
+					<p><pre>val route =
+path("order" / IntNumber) { id =>
+  (get | put) {
+    extractMethod { m =>
+      complete(s"Received ${m.name} request for order $id")
+    }
+  }
+}
+</pre></p>
+				</section>
+
+				<section>
+					<h2>Exemple 2</h2>
+					<p><pre>val orderGetOrPutWithMethod =
+path("order" / IntNumber) & (get | put) & extractMethod
+val route = orderGetOrPutWithMethod { (id, m) =>
+  complete(s"Received ${m.name} request for order $id")
+}</pre></p>
+				</section>
+
+				<section>
+					<h2>PathMatcher</h2>
+					<p><pre>val matcher: PathMatcher1[Option[Int]] =
+ "foo" / "bar" / "X" ~ IntNumber.? / ("edit" | "create")</pre></p>
+ 					<p>Intercepte les chemins suivants :</p>
+ 					<p><pre>foo/bar/X42/edit</pre> et <pre>foo/bar/X/create</pre></p>
+				</section>
+
+				<section>
+					<h2>Extraction case class</h2>
+					<p><pre>case class Color(red: Int, green: Int, blue: Int)
+val route = path("color") {
+  parameters('red.as[Int], 'green.as[Int], 'blue.as[Int]).as(Color) {
+    color =>
+    // utiliser color
+  }
+}</pre></p>
+				</section>
+
+				<section>
+					<h2>Validation case class</h2>
+					<p><pre>case class Color(name: String, red: Int, green: Int, blue: Int) {
+  require(!name.isEmpty, "color name must not be empty")
+  require(0 <= red && red <= 255, "red color component must be between 0 and 255")
+  require(0 <= green && green <= 255, "green color component must be between 0 and 255")
+  require(0 <= blue && blue <= 255, "blue color component must be between 0 and 255")
+}</pre></p>
+					<p>ValidationRejection si require ne passe pas</p>
+					<p>Par défaut : 400 Bad Request</p>
 				</section>
 
 				<section>
@@ -243,7 +406,62 @@ object Main extends App {
 				</section>
 
 				<section>
+				<p>Pour la route suivante</p>
+				<p><pre>val smallRoute =
+get {
+  pathSingleSlash {
+    complete {
+      "Hello World !"
+    }
+  } ~
+  path("ping") {
+    complete("PONG !")
+  }
+}</pre></p>
+					<p>Test</p>
+					<p><pre>"Hello World ! non renvoyé sur /" in {
+  Get() ~> smallRoute ~> check {
+    status === StatusCodes.OK
+    responseAs[String] shouldEqual "Hello World !"
+  }
+}</pre></p>
+				</section>
+
+				<section>
+				<p>Pour la même route ...</p>
+				<p><pre>val smallRoute =
+get {
+  pathSingleSlash {
+    complete {
+      "Hello World !"
+    }
+  } ~
+  path("ping") {
+    complete("PONG !")
+  }
+}</pre></p>
+					<p>Test</p>
+					<p><pre>"GET sur chemin inconnu non pris en compte" in {
+  Get("/pouet") ~> smallRoute ~> check {
+    handled shouldBe false
+  }
+}</pre></p>
+				</section>
+
+				<section>
+					<h2>Variables utilisables dans les tests</h2>
+					<p>entityAs</p>
+					<p>handled</p>
+					<p>header</p>
+					<p>response</p>
+					<p>status</p>
+					<p>entre autres ...</p>
+				</section>
+
+				<section>
 					<h2>Client</h2>
+					<p><pre>val responseFuture: Future[HttpResponse] =
+  Http().singleRequest(HttpRequest(uri = "http://akka.io"))</pre></p>
 				</section>
 
 				<section class="has-light-background" data-background-color="#ffffff">
